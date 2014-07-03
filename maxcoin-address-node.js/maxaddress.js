@@ -8,6 +8,9 @@ var sha3 = require('sha3');
 var ripemd160 = require('ripemd160');
 var bs58 = require('bs58');
 var sha256 = require('sha256');
+var jsrsasign = require('jsrsasign');
+
+// Hashing functions
 
 // in: binary string
 // out: Buffer
@@ -20,7 +23,7 @@ var hash_sha256 = function(s) {
 var hash_keccak = function(s) {
 	var d = new sha3.SHA3Hash(256);
 	d.update(s);
-	return new Buffer(d.digest('hex'), 'hex'); 
+	return new Buffer(d.digest('hex'), 'hex');
 };
 
 // in: string or Buffer
@@ -28,6 +31,36 @@ var hash_keccak = function(s) {
 var hash_ripemd160 = function(s) {
 	return ripemd160(s);
 };
+
+// Key generation functions
+
+var create_keypair = function() {
+	var keypair = jsrsasign.KEYUTIL.generateKeypair("EC", "secp256r1");
+	// console.log(keypair.prvKeyObj.prvKeyHex);
+	// console.log(keypair.pubKeyObj.pubKeyHex);
+	return {prvKey: keypair.prvKeyObj.prvKeyHex, pubKey: keypair.pubKeyObj.pubKeyHex};
+}
+
+var prvKey_to_WIF = function(prvKey) {
+	var baby = new Buffer(prvKey, 'hex');
+
+	// add 0x80 to beginning
+	var version = new Buffer(1);
+	version[0] = 128; // 0x80
+	var child = Buffer.concat([version, baby]);
+
+	// hash the extended key
+	var teenager = hash_keccak(child);
+
+	// take first 4 bytes of second hash as checksum
+	var checksum = teenager.slice(0, 4);
+
+	// add checksum to end of extended key
+	var adult = Buffer.concat([child, checksum]);
+
+	// base58 encode
+	return bs58.encode(adult);
+}
 
 // Address creation functions
 
@@ -76,11 +109,30 @@ var validate_address = function(address) {
 
 // Script entry point
 
-// Base64 encoded public key
-var pubkey_b64 = "BNX5V3mm0Uqu4ZVTB4AQ9IReam0vdsS3va8cuz4A909fVaJC2sqZcsnUL7sOWwz9U1HJehP0UW1tcfKvmfvAJkY=";
-var pubkey = new Buffer(pubkey_b64, 'base64');
+// Create a public/private keypair
+console.log('Creating a MaxCoin address from a keypair...');
 
-// MaxCoin address
+var keypair = create_keypair();
+var wifKey = prvKey_to_WIF(keypair.prvKey);
+var pubkey = new Buffer(keypair.pubKey, 'hex');
+
+// Create a MaxCoin address from this keypair
 var address = create_address(pubkey);
 var success = validate_address(address);
-console.log(address);
+
+console.log('Address: ' + address);
+console.log('Private key: ' + wifKey);
+console.log();
+
+// Base64 encoded public key
+console.log('Creating a MaxCoin address from a public key...');
+
+var pubkey_b64 = "BNX5V3mm0Uqu4ZVTB4AQ9IReam0vdsS3va8cuz4A909fVaJC2sqZcsnUL7sOWwz9U1HJehP0UW1tcfKvmfvAJkY=";
+pubkey = new Buffer(pubkey_b64, 'base64');
+
+// Create a MaxCoin address from this keypair
+var address = create_address(pubkey);
+var success = validate_address(address);
+
+console.log('Address: ' + address);
+console.log('Base64-encoded public key: ' + pubkey_b64);
