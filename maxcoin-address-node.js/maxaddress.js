@@ -62,6 +62,35 @@ var prvKey_to_WIF = function(prvKey) {
 	return bs58.encode(adult);
 }
 
+var validate_WIF = function(wif) {
+	// decode using base58
+	var baby = bs58.decode(wif);
+
+	// save the checksum bytes
+	var check0 = baby.slice(baby.length - 4);
+
+	// drop the checksum bytes
+	var teenager = baby.slice(0, baby.length - 4);
+
+	// hash the shortened string
+	var adult = hash_keccak(teenager);
+
+	// extract the second checksum
+	var check1 = adult.slice(0, 4);
+
+	if (check0.toString('hex') != check1.toString('hex')) {
+		console.log("Checksum error");
+		return false;
+	}
+
+	if (128 != baby[0]) {
+		console.log("Version mismatch");
+		return false;
+	}
+
+	return true;
+}
+
 // Address creation functions
 
 var create_address = function(pubkey) {
@@ -114,11 +143,13 @@ console.log('Creating a MaxCoin address from a keypair...');
 
 var keypair = create_keypair();
 var wifKey = prvKey_to_WIF(keypair.prvKey);
+var success = validate_WIF(wifKey);
+
 var pubkey = new Buffer(keypair.pubKey, 'hex');
 
 // Create a MaxCoin address from this keypair
 var address = create_address(pubkey);
-var success = validate_address(address);
+success = validate_address(address);
 
 console.log('Address: ' + address);
 console.log('Private key: ' + wifKey);
@@ -131,8 +162,8 @@ var pubkey_b64 = "BNX5V3mm0Uqu4ZVTB4AQ9IReam0vdsS3va8cuz4A909fVaJC2sqZcsnUL7sOWw
 pubkey = new Buffer(pubkey_b64, 'base64');
 
 // Create a MaxCoin address from this keypair
-var address = create_address(pubkey);
-var success = validate_address(address);
+address = create_address(pubkey);
+success = validate_address(address);
 
 console.log('Address: ' + address);
 console.log('Base64-encoded public key: ' + pubkey_b64);
