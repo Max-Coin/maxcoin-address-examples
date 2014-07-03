@@ -54,6 +54,26 @@ var create_address = function(pubkey) {
 	return bs58.encode(pensioner);
 };
 
+var validate_address = function(address) {
+	var k = bs58.decode(address);
+	var v0 = k.slice(0, 1);
+	var data = k.slice(1, k.length - 4);
+	var check0 = k.slice(k.length - 4);
+	var check1 = hash_keccak(Buffer.concat([v0, data])).slice(0, 4);
+
+	if (check0.toString('hex') != check1.toString('hex')) {
+		console.log("Checksum error");
+		return false;
+	}
+
+	if (110 != v0[0]) {
+		console.log("Version mismatch");
+		return false;
+	}
+
+	return true;
+}
+
 // Script entry point
 
 // Base64 encoded public key
@@ -62,4 +82,5 @@ var pubkey = new Buffer(pubkey_b64, 'base64');
 
 // MaxCoin address
 var address = create_address(pubkey);
+var success = validate_address(address);
 console.log(address);
