@@ -91,6 +91,48 @@ var validate_WIF = function(wif) {
 	return true;
 }
 
+var is_compressed_WIF = function(wif) {
+	// first character should be a K or an L
+	// rather than a 5
+	if (wif[0] == '5') {
+		return false;
+	}
+
+	if (wif[0] != 'K' && wif[0] != 'L') {
+		console.log("Bad first character");
+		return false;
+	}
+
+	// last byte when decoded should be 0x01
+	var decoded = bs58.decode(wif);
+	if (wif[wif.length - 1] != 0x01) {
+		console.log("Bad final byte");
+		return false;
+	}
+
+	return true;
+}
+
+var WIF_to_prvKey = function(wif) {
+	// decode using base58
+	var baby = bs58.decode(wif);
+
+	// drop the checksum bytes
+	var teenager = baby.slice(0, baby.length - 4);
+
+	// drop the version byte
+	var adult = teenager.slice(1);
+
+	// drop last byte?
+	if (is_compressed_WIF(wif)) {
+		// TODO
+		console.log("compressed!")
+		return adult;
+	} else {
+		return adult;
+	}
+}
+
 // Address creation functions
 
 var create_address = function(pubkey) {
@@ -144,6 +186,9 @@ console.log('Creating a MaxCoin address from a keypair...');
 var keypair = create_keypair();
 var wifKey = prvKey_to_WIF(keypair.prvKey);
 var success = validate_WIF(wifKey);
+
+console.log(keypair.prvKey);
+console.log(WIF_to_prvKey(wifKey).toString('hex'));
 
 var pubkey = new Buffer(keypair.pubKey, 'hex');
 

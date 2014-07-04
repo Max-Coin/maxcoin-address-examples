@@ -1,6 +1,6 @@
 {
   "name": "maxaddress",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "MaxCoin address generator",
   "main": "maxaddress.js",
   "dependencies": {
